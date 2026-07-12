@@ -126,6 +126,19 @@ app.get('/admin/posts', requireAdmin, async (req, res) => {
   res.json(r.rows);
 });
 
+// Get single post (admin, includes body)
+app.get('/admin/posts/:id', requireAdmin, async (req, res) => {
+  const r = await pool.query('SELECT * FROM posts WHERE id=$1', [req.params.id]);
+  if (!r.rows[0]) return res.status(404).json({ error: 'Nicht gefunden' });
+  const post = r.rows[0];
+  const imgs = await pool.query(
+    `SELECT id, image_base64, image_mime FROM post_images WHERE post_id=$1 ORDER BY sort_order ASC`,
+    [post.id]
+  );
+  post.images = imgs.rows;
+  res.json(post);
+});
+
 // Create post
 app.post('/admin/posts', requireAdmin, upload.array('images', 20), async (req, res) => {
   try {
